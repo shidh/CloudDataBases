@@ -25,7 +25,7 @@ public class ECS {
 	private BufferedReader stdBF = new BufferedReader(new InputStreamReader(
 			System.in));
 
-	private String JAR_DIR = "/Users/uniquehuang/Documents/code/CDB_MS3/ms3-server.jar";
+	private String JAR_DIR = "/Users/allen/code/CloudDataBases/ms3-server.jar";
 
 	ArrayList<ServerInfo> result;
 

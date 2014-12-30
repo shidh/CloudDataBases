@@ -1,7 +1,0 @@
-2014-01-28 10:52:50,896 INFO  [main] root: [START]
-2014-01-28 10:52:50,934 INFO  [Thread-1] root: Start listening to port 50010...
-2014-01-28 10:52:53,116 INFO  [Thread-1] root: ACCEPT new client connected [/127.0.0.1:40624]
-2014-01-28 10:52:53,118 INFO  [Thread-2] root: receive successfully ECS start
-2014-01-28 10:52:53,118 INFO  [Thread-2] root: RECEIVE 'ECS start' FROM [/127.0.0.1:40624]
-2014-01-28 10:52:53,120 INFO  [Thread-2] root: SEND 'ack' TO [/127.0.0.1:40624]
-2014-01-28 10:52:53,120 INFO  [Thread-2] root: receive successfully 
