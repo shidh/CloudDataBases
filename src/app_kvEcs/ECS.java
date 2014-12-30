@@ -25,7 +25,10 @@ public class ECS {
 	private BufferedReader stdBF = new BufferedReader(new InputStreamReader(
 			System.in));
 
-	private String JAR_DIR = "/Users/allen/code/CloudDataBases/ms3-server.jar";
+	
+	String syetemSeperator = System.getProperty("file.separator");
+	String projectRoot = System.getProperty("user.dir");
+	private String JAR_DIR = projectRoot + syetemSeperator+"ms3-server.jar";
 
 	ArrayList<ServerInfo> result;
 

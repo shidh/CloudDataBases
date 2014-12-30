@@ -95,6 +95,9 @@ public class Listen implements Runnable {
 						} else if (operation.equals("removeNode")) {
 							removeNode(ss);
 						}
+					} else if (ss[0].equals("SERVER")) {
+						// server messages
+						send("");
 					}
 				} catch (IOException e) {
 					logger.error("Failed to receive from server");

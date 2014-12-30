@@ -2,7 +2,6 @@
 *.log
 *.MF
 .settings
-.classpath
 
 bin/
 # Mobile Tools for Java (J2ME)

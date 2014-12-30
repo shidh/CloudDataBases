@@ -3,6 +3,7 @@ package app_kvClient;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 
 import org.apache.log4j.Level;
@@ -37,6 +38,9 @@ public class KVClient {
 		} catch (UnknownHostException e) {
 			System.out.println("EchoClient> Uknown host");
 			logger.error("EchoClient> Uknown host");
+		} catch (SocketException e) {
+            System.out.println("EchoClient> There may be some unkown communication errors");
+			logger.error("EchoClient> There may be some unkown communication errors");
 		} catch (IOException e) {
 			System.out.println("EchoClient> Failed to connect to KVServer!");
 			logger.error("EchoClient> Failed to connect to KVServer!");
@@ -49,6 +53,9 @@ public class KVClient {
 			kvstore.disconnect();
 			System.out.println("EchoClient> Quit connection!");
 			logger.info("EchoClient> Quit connection!");
+		} catch (SocketException e) {
+            System.out.println("EchoClient> There may be some unkown communication errors");
+			logger.error("EchoClient> There may be some unkown communication errors");
 		} catch (IOException e) {
 			System.out.println("EchoClient> Failed to close socketInputStream");
 			logger.error("EchoClient> Failed to close socketInputStream");
@@ -93,6 +100,10 @@ public class KVClient {
 				logger.info("EchoClient> " + kvmessage.KVMtoStr(kvmessage)
 						+ "\n");
 			}
+		} catch (SocketException e) {
+            System.out.println("EchoClient> There may be some unkown communication errors,  "
+            		+ "please check is the server still running and reconnect");
+			logger.error("EchoClient> There may be some unkown communication errors");
 		} catch (IOException e) {
 			System.out.println("EchoClient> Failed to put the <key, value>");
 			logger.error("EchoClient> Failed to put the <key, value>");
@@ -127,6 +138,10 @@ public class KVClient {
 				logger.info("EchoClient> " + kvmessage.KVMtoStr(kvmessage)
 						+ "\n");
 			}
+		} catch (SocketException e) {
+            System.out.println("EchoClient> There may be some unkown communication errors, "
+            		+ "please check is the server still running and reconnect");
+			logger.error("EchoClient> There may be some unkown communication errors");
 		} catch (IOException e) {
 			System.out.println("EchoClient> Failed to get the value of key");
 			logger.error("EchoClient> Failed to get the value of key");
