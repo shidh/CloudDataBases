@@ -54,7 +54,7 @@ public class Listen implements Runnable {
 			} catch (IOException e1) {
 				logger.error("error sending greading message");
 			}
-
+			
 			// Echo messages to client
 			while (socket.isConnected()) {
 				try {

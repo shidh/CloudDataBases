@@ -16,18 +16,18 @@ import client.CommunicationLogic;
 import common.messages.KVMessage.StatusType;
 import common.messages.MetaData;
 
-public class ECS {
-	private Logger logger = Logger.getRootLogger();
+public class ECS{
+	private static Logger logger = Logger.getRootLogger();
 
-	public MetaData metaData = null;
+	public static MetaData metaData = null;
 	private ArrayList<ServerInfo> serverList = new ArrayList<ServerInfo>();
 
 	private BufferedReader stdBF = new BufferedReader(new InputStreamReader(
 			System.in));
 
-	private String JAR_DIR = "/Users/allen/code/CloudDataBases/ms3-server.jar";
+	private String JAR_DIR = "/Users/uniquehuang/Documents/code/CloudDataBases/ms3-server.jar";
 
-	ArrayList<ServerInfo> result;
+	public static ArrayList<ServerInfo> result = null;
 
 	public ECS() {
 		// Read configuration file and store the ip and port information
@@ -63,6 +63,7 @@ public class ECS {
 		}
 
 	}
+	
 
 	/**
 	 * Constructor
@@ -95,7 +96,8 @@ public class ECS {
 						serverPort);
 				serverList.add(serverInfo);
 			}
-
+			ServerHeartbeat serverHeartbeat = new ServerHeartbeat();
+			new Thread(serverHeartbeat).start();
 			// Command line user interface
 			CommandLine();
 		} catch (FileNotFoundException e) {
@@ -315,7 +317,7 @@ public class ECS {
 				String ackMsg = communication.receive();
 				// Receive ack
 				if (ackMsg.equals("ack")) {
-					System.out.println("Srart server successfully");
+					System.out.println("Start server successfully");
 				}
 				communication.disconnect();
 			} catch (IOException e) {
@@ -619,5 +621,163 @@ public class ECS {
 		// Remove server from unavailable server list(result)
 		result.remove(randomPosition);
 
+	}
+
+	/**
+	 * Remove a node at a specified position.
+	 */
+	static public void removeTargetNode(String port) {
+		String targetServerIP = null;
+		String targetServerPort = null;
+		ArrayList<ServerInfo> delServerList = new ArrayList<ServerInfo>();
+		if (result.size() == 0) {
+			logger.error("No available servers!");
+//			System.out.println("No available servers!");
+			return;
+		}
+		for (ServerInfo info : result) {
+			if (info.getPort().equals(port)){
+				targetServerIP = info.getAdd();
+				targetServerPort = port;
+				delServerList.add(info);
+				System.out.println("The following server is crashed: " + info);
+				logger.info("The following server is crashed: " + info);
+			}
+		}
+		result.removeAll(delServerList);
+		// Remove node from meta data
+		metaData.remove(targetServerIP + ":" + targetServerPort);
+		// Update meta data to all available server
+		for (ServerInfo info : result) {
+			
+			// Communicate server
+			CommunicationLogic communicateUpdate = new CommunicationLogic(
+					info.getAdd(), Integer.parseInt(info.getPort()));
+			try {
+				communicateUpdate.connect();
+				String rec_msg = communicateUpdate.receive();
+				System.out.println(rec_msg);
+				communicateUpdate.send("ECS updateMetaData \n"
+						+ metaData.toString());
+				String ackMsg = communicateUpdate.receive();
+				if (ackMsg.equals("ack")) {
+					System.out.println("ECS>> Meta data update to server "
+							+ info.getAdd() + ":" + info.getPort()
+							+ " successfully");
+				} else {
+					System.out
+							.println("ERROR! Failed to send meta data to server "
+									+ info.getAdd() + ":" + info.getPort());
+				}
+				communicateUpdate.disconnect();
+			} catch (IOException e) {
+				System.out
+						.println("ERROR! Cannot connect to server, operation aborted");
+				logger.error("ERROR! Cannot connect to server, operation aborted");
+				return;
+			}
+		}
+	}
+	
+	/**
+	 * Backup relevant nodes of crashed node, namely one node next and two nodes before the
+	 * crashed node.
+	 */
+	static public void backupRelevantNodes(String port) {
+		String crashedServerIP = null;
+		String crashedServerPort = null;
+		if (result.size() == 0) {
+			System.out.println("No available servers!");
+			return;
+		}
+		for (ServerInfo info : result) {
+			if (info.getPort().equals(port)){
+				crashedServerIP = info.getAdd();
+				crashedServerPort = port;
+			}
+		}
+		// there are three relevant servers to be backed up
+		String crashedAddress = crashedServerIP + ":" + crashedServerPort;
+		String address1 = metaData.get(crashedAddress);
+		String address2 = metaData.getPrevious(crashedAddress);
+		String address3 = metaData.getPrevious(address2);
+		logger.info("Notify server to backup: " + address1);
+		logger.info("Notify server to backup: " + address2);
+		logger.info("Notify server to backup: " + address3);
+		
+		// Communicate with address1
+		CommunicationLogic communicateBackup1 = new CommunicationLogic(
+				address1.split(":")[0], Integer.parseInt(address1.split(":")[1]));
+		try {
+			communicateBackup1.connect();
+			String rec_msg = communicateBackup1.receive();
+			System.out.println(rec_msg);
+			communicateBackup1.send("ECS backup");
+			String ackMsg = communicateBackup1.receive();
+			if (ackMsg.equals("ack")) {
+				System.out.println("ECS>> server " + address1 + " backup successfully!");
+				logger.info("ECS>> server " + address1 + " backup successfully!");
+			} else {
+				System.out.println("ECS>> server " + address1 + " backup failed!");
+				logger.error("ECS>> server " + address1 + " backup failed!");
+			} 
+			communicateBackup1.disconnect();
+		} catch (IOException e) {
+			System.out
+					.println("ERROR! Cannot connect to server, operation aborted");
+			logger.error("ERROR! Cannot connect to server, operation aborted");
+			return;
+		}
+		
+		// Communicate with address2
+		CommunicationLogic communicateBackup2 = new CommunicationLogic(
+				address2.split(":")[0], Integer.parseInt(address2.split(":")[1]));
+		try {
+			communicateBackup2.connect();
+			String rec_msg = communicateBackup2.receive();
+			System.out.println(rec_msg);
+			communicateBackup2.send("ECS backup");
+			String ackMsg = communicateBackup2.receive();
+			if (ackMsg.equals("ack")) {
+				System.out.println("ECS>> server " + address2 + " backup successfully!");
+				logger.info("ECS>> server " + address2 + " backup successfully!");
+			} else {
+				System.out.println("ECS>> server " + address2 + " backup failed!");
+				logger.error("ECS>> server " + address2 + " backup failed!");
+			} 
+			communicateBackup2.disconnect();
+		} catch (IOException e) {
+			System.out
+					.println("ERROR! Cannot connect to server, operation aborted");
+			logger.error("ERROR! Cannot connect to server, operation aborted");
+			return;
+		}
+		
+		// Communicate with address3
+		CommunicationLogic communicateBackup3 = new CommunicationLogic(
+				address3.split(":")[0], Integer.parseInt(address3.split(":")[1]));
+		try {
+			communicateBackup3.connect();
+			String rec_msg = communicateBackup3.receive();
+			System.out.println(rec_msg);
+			communicateBackup3.send("ECS backup");
+			String ackMsg = communicateBackup3.receive();
+			if (ackMsg.equals("ack")) {
+				System.out.println("ECS>> server " + address3 + " backup successfully!");
+				logger.info("ECS>> server " + address3 + " backup successfully!");
+			} else {
+				System.out.println("ECS>> server " + address3 + " backup failed!");
+				logger.error("ECS>> server " + address3 + " backup failed!");
+			} 
+			communicateBackup3.disconnect();
+		} catch (IOException e) {
+			System.out
+					.println("ERROR! Cannot connect to server, operation aborted");
+			logger.error("ERROR! Cannot connect to server, operation aborted");
+			return;
+		}
+//		System.out.println("Backup: " + address1);
+//		System.out.println("Backup: " + address2);
+//		System.out.println("Backup: " + address3);
 	}
 }
