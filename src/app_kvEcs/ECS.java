@@ -18,14 +18,15 @@ import common.messages.MetaData;
 
 public class ECS{
 	private static Logger logger = Logger.getRootLogger();
-
 	public static MetaData metaData = null;
 	private ArrayList<ServerInfo> serverList = new ArrayList<ServerInfo>();
 
 	private BufferedReader stdBF = new BufferedReader(new InputStreamReader(
 			System.in));
 
-	private String JAR_DIR = "/Users/uniquehuang/Documents/code/CloudDataBases/ms3-server.jar";
+	String syetemSeperator = System.getProperty("file.separator");
+	String projectRoot = System.getProperty("user.dir");
+	private String JAR_DIR = projectRoot + syetemSeperator+"ms3-server.jar";
 
 	public static ArrayList<ServerInfo> result = null;
 

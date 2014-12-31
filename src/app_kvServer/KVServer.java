@@ -9,7 +9,10 @@ public class KVServer {
 	static int PORT = 50000;
 
 	static private Logger logger = Logger.getRootLogger();
-	private static String LOG_DIR="/Users/uniquehuang/Documents/code/CloudDataBases/logs/server/";
+	static String syetemSeperator = System.getProperty("file.separator");
+	static String projectRoot = System.getProperty("user.dir");
+	
+	private static String LOG_DIR = projectRoot + syetemSeperator + "logs"+syetemSeperator +"server"+syetemSeperator;
 
 	/**
 	 * Start KV Server at given port
