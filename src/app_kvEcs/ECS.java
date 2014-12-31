@@ -16,6 +16,11 @@ import client.CommunicationLogic;
 import common.messages.KVMessage.StatusType;
 import common.messages.MetaData;
 
+/**
+ * 
+ * 
+ *
+ */
 public class ECS {
 	private Logger logger = Logger.getRootLogger();
 
