@@ -125,6 +125,25 @@ public class MetaData {
 		}
 		return circle.get(hash);
 	}
+	
+	/**
+	 * The given key is from a new object, return address of previous node which is closet to this
+	 * new object.
+	 * 
+	 * @param key
+	 * @return address
+	 */
+	public String getPrevious(String key) {
+		String hash = computeMd5(key);
+		SortedMap<String, String> headMap = circle.headMap(hash);
+		if (headMap.isEmpty()) {
+			hash = circle.lastKey();
+		} else {
+			hash = headMap.lastKey();
+		}
+		return circle.get(hash);
+	}
+
 
 	/**
 	 * MetaDataToString, in order to transfer from servers.
