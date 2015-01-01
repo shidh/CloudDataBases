@@ -19,7 +19,7 @@ public class MetaData {
 	 * Circle is the form of MetaData, whose every server node takes address as
 	 * its value and address's corresponding MD5 as its key.
 	 */
-	private SortedMap<String, String> circle = new TreeMap<String, String>();
+	private TreeMap<String, String> circle = new TreeMap<String, String>();
 	
 	public MetaData(){}
 
@@ -122,6 +122,24 @@ public class MetaData {
 			hash = circle.firstKey();
 		} else {
 			hash = tailMap.firstKey();
+		}
+		return circle.get(hash);
+	}
+	
+	
+	/**
+	 * The given key is already in the circle and returns the address of this server node.
+	 * 
+	 * @param key
+	 * @return address
+	 */
+	public String getNext(String key) {
+		String hash = computeMd5(key);
+		String higherKey = circle.higherKey(hash);
+		if (higherKey.isEmpty()) {
+			hash = circle.firstKey();
+		} else {
+			hash = higherKey;
 		}
 		return circle.get(hash);
 	}

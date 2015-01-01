@@ -3,16 +3,15 @@ package app_kvServer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
-import javax.xml.crypto.Data;
-
-import logger.LogSetup;
-
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import client.CommunicationLogic;
@@ -73,6 +72,8 @@ public class Listen implements Runnable {
 					String[] ss = rec_message.split(" ");
 					if (ss[0].equals("PUT")) {
 						put(ss);
+						logger.info("begin backup");
+						backUp(ss);
 					} else if (ss[0].equals("GET")) {
 						get(ss);
 					} else if (ss[0].equals("ECS")) {
@@ -94,13 +95,15 @@ public class Listen implements Runnable {
 							moveDataTo();
 						} else if (operation.equals("removeNode")) {
 							removeNode(ss);
+						} else if (operation.equals("backup")) {
+							//TODO
 						}
 					} else if (ss[0].equals("SERVER")) {
 						// Handle server messages
 						String operation = ss[1];
-						if (operation.equals("backUp")) {
+						if (operation.equals("backup")) {
 							//TODO get backup message and implement backup method 
-							ackBackUp(ss);
+							doBackUp(ss[2], ss[3]);
 						}
 					}
 				} catch (IOException e) {
@@ -110,6 +113,19 @@ public class Listen implements Runnable {
 			}
 		}
 	}
+	
+	//
+	private void addNode(String rec_message) throws IOException {
+		String split[] = rec_message.split("\n");
+		logger.info("[META-DATA] " + split[1]);
+		// Construct meta data and save it into data
+		// singleton
+		DataSingleton.getInstance().setMetaData(
+				new MetaData(split[1]));
+		// Send back ack
+		send("ack");
+	}
+	
 	
 	private void removeNode(String[] ss) throws IOException {
 		// Set to SERVER_WRITE_LOCK
@@ -153,6 +169,10 @@ public class Listen implements Runnable {
 		shutDown();
 	}
 
+	
+	//TODO
+	//add a node, call backupALL(key, bull) on the next node to delete
+	//String nextServer = metaData.get(ip + ":" + port);
 	private void moveDataTo() throws IOException {
 		// Set to SERVER_WRITE_LOCK
 		DataSingleton.getInstance().setStatus(
@@ -209,17 +229,6 @@ public class Listen implements Runnable {
 	private void updateMetaData(String rec_message) throws IOException {
 		String split[] = rec_message.split("\n");
 		logger.info("[UPDATE META-DATA] " + split[1]);
-		// Construct meta data and save it into data
-		// singleton
-		DataSingleton.getInstance().setMetaData(
-				new MetaData(split[1]));
-		// Send back ack
-		send("ack");
-	}
-
-	private void addNode(String rec_message) throws IOException {
-		String split[] = rec_message.split("\n");
-		logger.info("[META-DATA] " + split[1]);
 		// Construct meta data and save it into data
 		// singleton
 		DataSingleton.getInstance().setMetaData(
@@ -388,44 +397,64 @@ public class Listen implements Runnable {
 	
 	
 	/**
-	 * Backup the coordinator node data to two replica node instances
+	 * Send backup command to two replica node instances with the coordinator node data
 	 */
-	public void doBackUp() {
+	public void backUp(String[] ss){
 		MetaData metaData = DataSingleton.getInstance()
 				.getMetaData();
+		ArrayList<String> replicaList = new ArrayList<String>();
 		
-		//TODO get the next two servers
+		//get the next two servers
+		String ip = socket.getLocalAddress().toString().replace("/", "");;
+		int port = socket.getLocalPort();
+		logger.info("my ip port "+ip+" "+port);
 		
-		
-		
+		String nextServer1 = metaData.getNext(ip + ":" + port);
+		String split1[] = nextServer1.split(":");
+		String nextServerIP = split1[0];
+		String nextServerPort = split1[1];
+		logger.info("server1 "+nextServer1);
+
+
+		replicaList.add(nextServer1);
+
+		String nextServer2 = metaData.getNext(nextServerIP + ":" + nextServerPort);
+		replicaList.add(nextServer2);
+		logger.info("server2 "+nextServer2);
 		// "Put" data to the two replica servers
-		for (Iterator<String> it = metaData.getCircle().keySet().iterator(); 
-				it.hasNext();) {
-			String k = it.next();
-			String value = metaData.getCircle().get(k);
-			String split[] = value.split(":");
+		for (String replica : replicaList) {
+			String split[] = replica.split(":");
+			
 			// Connect to server
 			CommunicationLogic communication = new CommunicationLogic(split[0],
 					Integer.parseInt(split[1]));
 			try {
 				communication.connect();
 				String rec_msg = communication.receive();
-				System.out.println(rec_msg);
+				logger.info("receive message from replica server"+rec_msg);
 			
-				// Send backup command to server
-				communication.send("SERVER backUp");
-				String ackMsg = communication.receive();
+				//backup data to server
+				logger.info("SERVER "+"backup " + ss[1] + " " + ss[2]);
+				communication.send("SERVER "+"backup " + ss[1] + " " + ss[2]);
+				// Receive
+				rec_msg = communication.receive();
+				logger.info("receive message from replica server"+rec_msg);
+				
 				// Receive ack
-				if (ackMsg.split(" ")[0].equals("BACKUP_SUCCESS")) {
-					logger.info("backup data "+ ackMsg.split(" ")[1]+":"+ackMsg.split(" ")[2]+" successfully");
-				} else if (ackMsg.split(" ")[0].equals("BACKUP_UPDATE")) {
-					logger.info("update data "+ ackMsg.split(" ")[1]+":"+ackMsg.split(" ")[2]+" successfully");
+				if (rec_msg.split(" ")[0].equals("BACKUP_SUCCESS")) {
+					logger.info("backup data "+ rec_msg.split(" ")[1]+":"+rec_msg.split(" ")[2]+" successfully");
+				} else if (rec_msg.split(" ")[0].equals("BACKUP_UPDATE")) {
+					logger.info("update data "+ rec_msg.split(" ")[1]+":"+rec_msg.split(" ")[2]+" successfully");
 				}
 				communication.disconnect();
 			} catch (IOException e) {
 				System.out.println("ERROR! Cannot connect to server");
 				logger.error("ERROR! Cannot connect to server");
+			} catch (Exception e) {
+				System.out.println("ERROR!");
+				logger.error("ERROR!");
 			}
+			
 		}
 	}
 	
@@ -433,36 +462,44 @@ public class Listen implements Runnable {
 	
 	
 	/**
-	 * ack the PUT Operation(backup)
+	 * replicas execute the backup(PUT Operation) and ack
 	 * 
 	 * @param message from the coordinator server
 	 * @throws IOException
 	 * 
 	 * send message back to the coordinator
 	 */
-	private void ackBackUp(String[] ss) throws IOException {
+	private void doBackUp(String key, String value) throws IOException {
 		// Check status
 		StatusType status = DataSingleton.getInstance()
 				.getStatus();
 		if (status.equals(StatusType.valueOf("SERVER_STOPPED"))) {
 			send("SERVER_STOPPED");
+			logger.error("backup failed");
 		} else if (status.equals(StatusType
 				.valueOf("SERVER_WRITE_LOCK"))) {
 			send("SERVER_WRITE_LOCK");
+			logger.error("backup failed");
 		} else {
 			// If the replica server doesn't hold the key
-			if (!DataSingleton.getInstance().containsKey(ss[1])) {
-					DataSingleton.getInstance().put(ss[1],
-							ss[2]);
-					String send_message = "BACKUP_SUCCESS "
-							+ ss[1] + " " + ss[2];
+			if (!DataSingleton.getInstance().containsKey(key)) {
+					DataSingleton.getInstance().put(key, value);
+					String send_message = "BACKUP_SUCCESS " + key + " " + value;
 					send(send_message);
+					
+					//check data is backup or not
+					for (Entry<String, String> entry : DataSingleton.getInstance().getMap().entrySet()) {
+					    logger.info("Data: "+entry.getKey()+":"+entry.getValue());
+					}
+
 			} else {
-					DataSingleton.getInstance().put(ss[1],
-							ss[2]);
-					String send_message = "BACKUP_UPDATE "
-							+ ss[1] + " " + ss[2];
+					DataSingleton.getInstance().put(key, value);
+					String send_message = "BACKUP_UPDATE " + key + " " + value;
 					send(send_message);
+					//check data is backup or not
+					for (Entry<String, String> entry : DataSingleton.getInstance().getMap().entrySet()) {
+					    logger.info("Data: "+entry.getKey()+":"+entry.getValue());
+					}
 			}
 		}
 	}
