@@ -96,8 +96,12 @@ public class Listen implements Runnable {
 							removeNode(ss);
 						}
 					} else if (ss[0].equals("SERVER")) {
-						// server messages
-						send("");
+						// Handle server messages
+						String operation = ss[1];
+						if (operation.equals("backUp")) {
+							//TODO get backup message and implement backup method 
+							ackBackUp(ss);
+						}
 					}
 				} catch (IOException e) {
 					logger.error("Failed to receive from server");
@@ -106,7 +110,7 @@ public class Listen implements Runnable {
 			}
 		}
 	}
-
+	
 	private void removeNode(String[] ss) throws IOException {
 		// Set to SERVER_WRITE_LOCK
 		DataSingleton.getInstance().setStatus(
@@ -380,5 +384,88 @@ public class Listen implements Runnable {
 		logger.info("SEND '" + send_message + "' TO ["
 				+ socket.getRemoteSocketAddress() + "]");
 	}
+	
+	
+	
+	/**
+	 * Backup the coordinator node data to two replica node instances
+	 */
+	public void doBackUp() {
+		MetaData metaData = DataSingleton.getInstance()
+				.getMetaData();
+		
+		//TODO get the next two servers
+		
+		
+		
+		// "Put" data to the two replica servers
+		for (Iterator<String> it = metaData.getCircle().keySet().iterator(); 
+				it.hasNext();) {
+			String k = it.next();
+			String value = metaData.getCircle().get(k);
+			String split[] = value.split(":");
+			// Connect to server
+			CommunicationLogic communication = new CommunicationLogic(split[0],
+					Integer.parseInt(split[1]));
+			try {
+				communication.connect();
+				String rec_msg = communication.receive();
+				System.out.println(rec_msg);
+			
+				// Send backup command to server
+				communication.send("SERVER backUp");
+				String ackMsg = communication.receive();
+				// Receive ack
+				if (ackMsg.split(" ")[0].equals("BACKUP_SUCCESS")) {
+					logger.info("backup data "+ ackMsg.split(" ")[1]+":"+ackMsg.split(" ")[2]+" successfully");
+				} else if (ackMsg.split(" ")[0].equals("BACKUP_UPDATE")) {
+					logger.info("update data "+ ackMsg.split(" ")[1]+":"+ackMsg.split(" ")[2]+" successfully");
+				}
+				communication.disconnect();
+			} catch (IOException e) {
+				System.out.println("ERROR! Cannot connect to server");
+				logger.error("ERROR! Cannot connect to server");
+			}
+		}
+	}
+	
+	
+	
+	
+	/**
+	 * ack the PUT Operation(backup)
+	 * 
+	 * @param message from the coordinator server
+	 * @throws IOException
+	 * 
+	 * send message back to the coordinator
+	 */
+	private void ackBackUp(String[] ss) throws IOException {
+		// Check status
+		StatusType status = DataSingleton.getInstance()
+				.getStatus();
+		if (status.equals(StatusType.valueOf("SERVER_STOPPED"))) {
+			send("SERVER_STOPPED");
+		} else if (status.equals(StatusType
+				.valueOf("SERVER_WRITE_LOCK"))) {
+			send("SERVER_WRITE_LOCK");
+		} else {
+			// If the replica server doesn't hold the key
+			if (!DataSingleton.getInstance().containsKey(ss[1])) {
+					DataSingleton.getInstance().put(ss[1],
+							ss[2]);
+					String send_message = "BACKUP_SUCCESS "
+							+ ss[1] + " " + ss[2];
+					send(send_message);
+			} else {
+					DataSingleton.getInstance().put(ss[1],
+							ss[2]);
+					String send_message = "BACKUP_UPDATE "
+							+ ss[1] + " " + ss[2];
+					send(send_message);
+			}
+		}
+	}
+	
 
 }
