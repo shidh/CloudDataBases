@@ -36,7 +36,9 @@ public class ServerHeartbeat extends Thread{
         	if (socket != null) {
         		try {
     				inputStream = socket.getInputStream();
-    			} catch (IOException e1) {
+    			} catch (IOException e) {
+    				System.out.println("fail to get input stream");
+    				e.printStackTrace();
     			}
     			try {
     				String rec_message = receive();
@@ -49,12 +51,17 @@ public class ServerHeartbeat extends Thread{
 						public void run() {
 							ECS.removeTargetNode(serverPort);
 							ECS.backupRelevantNodes(serverPort);
+							// backup method already inside
+							ECS.addNode();
 						}   
 					}; 
 					timer.schedule(task, 10000);
 					serverMap.put(serverPort, timer);
+					socket.close();
 //    				System.out.println(rec_message);
-    			} catch (IOException e1) {
+    			} catch (IOException e) {
+    				System.out.println("fail to read from input stream");
+    				e.printStackTrace();
     			}
         	}
         }

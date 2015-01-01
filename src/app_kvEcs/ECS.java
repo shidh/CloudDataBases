@@ -19,14 +19,14 @@ import common.messages.MetaData;
 public class ECS{
 	private static Logger logger = Logger.getRootLogger();
 	public static MetaData metaData = null;
-	private ArrayList<ServerInfo> serverList = new ArrayList<ServerInfo>();
+	private static ArrayList<ServerInfo> serverList = new ArrayList<ServerInfo>();
 
 	private BufferedReader stdBF = new BufferedReader(new InputStreamReader(
 			System.in));
 
-	String syetemSeperator = System.getProperty("file.separator");
-	String projectRoot = System.getProperty("user.dir");
-	private String JAR_DIR = projectRoot + syetemSeperator+"ms3-server.jar";
+	static String syetemSeperator = System.getProperty("file.separator");
+	static String projectRoot = System.getProperty("user.dir");
+	private static String JAR_DIR = projectRoot + syetemSeperator+"ms3-server.jar";
 
 	public static ArrayList<ServerInfo> result = null;
 
@@ -403,7 +403,7 @@ public class ECS{
 	/**
 	 * Add a new node to the storage service at an arbitrary position.
 	 */
-	public void addNode() {
+	public static void addNode() {
 		// Clone a copy of server list
 		ArrayList<ServerInfo> temp = new ArrayList<ServerInfo>(serverList);
 		// Leave out unavailable servers
@@ -544,6 +544,9 @@ public class ECS{
 			logger.error("ERROR! Cannot connect to server, operation aborted");
 			return;
 		}
+		
+		// inform relevant nodes to backup
+		backupRelevantNodes(temp.get(randomIndex).getPort());
 	}
 
 	/**
@@ -621,7 +624,8 @@ public class ECS{
 		}
 		// Remove server from unavailable server list(result)
 		result.remove(randomPosition);
-
+		// inform relevant nodes to backup
+		backupRelevantNodes(randomServerPort);
 	}
 
 	/**

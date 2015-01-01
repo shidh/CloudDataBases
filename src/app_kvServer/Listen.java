@@ -220,6 +220,8 @@ public class Listen implements Runnable {
 		// singleton
 		DataSingleton.getInstance().setMetaData(
 				new MetaData(split[1]));
+		// start service automatically once added
+		start();
 		// Send back ack
 		send("ack");
 	}
