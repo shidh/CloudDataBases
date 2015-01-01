@@ -73,7 +73,7 @@ public class Listen implements Runnable {
 					if (ss[0].equals("PUT")) {
 						put(ss);
 						logger.info("begin backup");
-						backUp(ss);
+						backUp(ss[1], ss[2]);
 					} else if (ss[0].equals("GET")) {
 						get(ss);
 					} else if (ss[0].equals("ECS")) {
@@ -96,7 +96,7 @@ public class Listen implements Runnable {
 						} else if (operation.equals("removeNode")) {
 							removeNode(ss);
 						} else if (operation.equals("backup")) {
-							//TODO
+							backupALL();
 						}
 					} else if (ss[0].equals("SERVER")) {
 						// Handle server messages
@@ -216,6 +216,10 @@ public class Listen implements Runnable {
 				System.out.println(rec_msg);
 				// Disconnect
 				communicateMove.disconnect();
+				
+				//remove the unnecessary backup data on the next two nodes
+				backUp(key, "null");
+				
 				// Delete local data
 				it.remove();
 			}
@@ -395,11 +399,11 @@ public class Listen implements Runnable {
 	}
 	
 	
-	
 	/**
+	 * For coordinator node
 	 * Send backup command to two replica node instances with the coordinator node data
 	 */
-	public void backUp(String[] ss){
+	public void backUp(String key, String value){
 		MetaData metaData = DataSingleton.getInstance()
 				.getMetaData();
 		ArrayList<String> replicaList = new ArrayList<String>();
@@ -434,8 +438,8 @@ public class Listen implements Runnable {
 				logger.info("receive message from replica server"+rec_msg);
 			
 				//backup data to server
-				logger.info("SERVER "+"backup " + ss[1] + " " + ss[2]);
-				communication.send("SERVER "+"backup " + ss[1] + " " + ss[2]);
+				logger.info("SERVER "+"backup " + key + " " + value);
+				communication.send("SERVER "+"backup " + key + " " + value);
 				// Receive
 				rec_msg = communication.receive();
 				logger.info("receive message from replica server"+rec_msg);
@@ -457,11 +461,22 @@ public class Listen implements Runnable {
 			
 		}
 	}
-	
-	
+
+	/**
+	 * For coordinator node
+	 * backup all data
+	 * 
+	 */
+	private void backupALL(){
+		for (Entry<String, String> entry : DataSingleton.getInstance().getMap().entrySet()) {
+			backUp(entry.getKey(), entry.getValue());
+		}
+	}
+
 	
 	
 	/**
+	 * for replica node
 	 * replicas execute the backup(PUT Operation) and ack
 	 * 
 	 * @param message from the coordinator server
