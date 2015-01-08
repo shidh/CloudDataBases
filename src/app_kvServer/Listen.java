@@ -72,9 +72,19 @@ public class Listen implements Runnable {
 					String[] ss = rec_message.split(" ");
 					if (ss[0].equals("PUT")) {
 						put(ss);
-						// moved this inside put
-						// logger.info("begin backup");
-						// backUp(ss[1], ss[2]);
+						
+						MetaData metaData = DataSingleton.getInstance().getMetaData();
+						String serverAdd = metaData.get(ss[1]);
+						String split[] = serverAdd.split(":");
+						String IP = split[0];
+						String Port = split[1];
+						String ip = socket.getLocalAddress().toString().replace("/", "");
+						// If this is the right server
+						if (IP.equals(ip) && Port.equals(socket.getLocalPort() + "")) {
+							logger.info("begin backup");
+							backUp(ss[1], ss[2]);
+						}
+
 					} else if (ss[0].equals("GET")) {
 						get(ss);
 					} else if (ss[0].equals("ECS")) {
@@ -311,8 +321,6 @@ public class Listen implements Runnable {
 								+ ss[2];
 						send(send_message);
 
-						logger.info("begin backup");
-						backUp(ss[1], ss[2]);
 					}
 				} else {
 					if (ss[2].equals("null")) {
@@ -325,9 +333,6 @@ public class Listen implements Runnable {
 						String send_message = "PUT_UPDATE " + ss[1] + " "
 								+ ss[2];
 						send(send_message);
-
-						logger.info("begin backup update");
-						backUp(ss[1], ss[2]);
 					}
 				}
 			}
