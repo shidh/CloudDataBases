@@ -136,7 +136,7 @@ public class MetaData {
 	public String getNext(String key) {
 		String hash = computeMd5(key);
 		String higherKey = circle.higherKey(hash);
-		if (higherKey.isEmpty()) {
+		if (higherKey==null) {
 			hash = circle.firstKey();
 		} else {
 			hash = higherKey;

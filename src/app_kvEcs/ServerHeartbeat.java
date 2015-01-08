@@ -49,13 +49,13 @@ public class ServerHeartbeat extends Thread{
     				Timer timer = new Timer();
 					TimerTask task = new TimerTask() {   
 						public void run() {
-							ECS.removeTargetNode(serverPort);
-							ECS.backupRelevantNodes(serverPort);
+							ServerInfo serverInfo = ECS.removeTargetNode(serverPort);
+							ECS.backupRelevantNodes(serverInfo.getAdd() + ":" + serverInfo.getPort());
 							// backup method already inside
 							ECS.addNode();
 						}   
 					}; 
-					timer.schedule(task, 10000);
+					timer.schedule(task, 60000);
 					serverMap.put(serverPort, timer);
 					socket.close();
 //    				System.out.println(rec_message);

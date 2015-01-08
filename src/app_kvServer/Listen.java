@@ -3,11 +3,14 @@ package app_kvServer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.SortedMap;
 
 import org.apache.log4j.Logger;
 
@@ -50,7 +53,7 @@ public class Listen implements Runnable {
 			} catch (IOException e1) {
 				logger.error("error sending greading message");
 			}
-			
+
 			// Echo messages to client
 			while (socket.isConnected()) {
 				try {
@@ -69,8 +72,9 @@ public class Listen implements Runnable {
 					String[] ss = rec_message.split(" ");
 					if (ss[0].equals("PUT")) {
 						put(ss);
-						logger.info("begin backup");
-						backUp(ss[1], ss[2]);
+						// moved this inside put
+						// logger.info("begin backup");
+						// backUp(ss[1], ss[2]);
 					} else if (ss[0].equals("GET")) {
 						get(ss);
 					} else if (ss[0].equals("ECS")) {
@@ -89,7 +93,7 @@ public class Listen implements Runnable {
 						} else if (operation.equals("updateMetaData")) {
 							updateMetaData(rec_message);
 						} else if (operation.equals("moveDataTo")) {
-							moveDataTo();
+							moveDataTo(ss[2]);
 						} else if (operation.equals("removeNode")) {
 							removeNode(ss);
 						} else if (operation.equals("backup")) {
@@ -99,7 +103,8 @@ public class Listen implements Runnable {
 						// Handle server messages
 						String operation = ss[1];
 						if (operation.equals("backup")) {
-							//TODO get backup message and implement backup method 
+							// TODO get backup message and implement backup
+							// method
 							doBackUp(ss[2], ss[3]);
 						}
 					}
@@ -110,32 +115,28 @@ public class Listen implements Runnable {
 			}
 		}
 	}
-	
+
 	//
 	private void addNode(String rec_message) throws IOException {
 		String split[] = rec_message.split("\n");
 		logger.info("[META-DATA] " + split[1]);
 		// Construct meta data and save it into data
 		// singleton
-		DataSingleton.getInstance().setMetaData(
-				new MetaData(split[1]));
+		DataSingleton.getInstance().setMetaData(new MetaData(split[1]));
 		// Send back ack
 		send("ack");
 	}
-	
-	
+
 	private void removeNode(String[] ss) throws IOException {
 		// Set to SERVER_WRITE_LOCK
-		DataSingleton.getInstance().setStatus(
-				StatusType.SERVER_WRITE_LOCK);
+		//DataSingleton.getInstance().setStatus(StatusType.SERVER_WRITE_LOCK);
 		// Get next server
 		String split[] = ss[3].split(":");
 		String nextServerIP = split[0];
 		String nextServerPort = split[1];
 		// Traverse data
 		Map data = DataSingleton.getInstance().getMap();
-		Iterator<Map.Entry<String, String>> it = data
-				.entrySet().iterator();
+		Iterator<Map.Entry<String, String>> it = data.entrySet().iterator();
 		while (it.hasNext()) {
 			// Get each entry of data
 			Map.Entry<String, String> entry = it.next();
@@ -143,8 +144,7 @@ public class Listen implements Runnable {
 			String value = entry.getValue();
 			// communicate next server and move data to it
 			CommunicationLogic communicateMove = new CommunicationLogic(
-					nextServerIP,
-					Integer.parseInt(nextServerPort));
+					nextServerIP, Integer.parseInt(nextServerPort));
 			// Connect
 			communicateMove.connect();
 			// Receive
@@ -152,8 +152,7 @@ public class Listen implements Runnable {
 			System.out.println(rec_msg);
 			logger.info(rec_msg);
 			// Send
-			communicateMove
-					.send("PUT " + key + " " + value);
+			communicateMove.send("PUT " + key + " " + value);
 			// Receive
 			rec_msg = communicateMove.receive();
 			System.out.println(rec_msg);
@@ -161,27 +160,21 @@ public class Listen implements Runnable {
 			communicateMove.disconnect();
 		}
 		// Set to undo write lock
-		DataSingleton.getInstance().setStatus(
-				StatusType.SERVER_WRITE_LOCK);
+		//DataSingleton.getInstance().setStatus(StatusType.SERVER_WRITE_LOCK);
 		shutDown();
 	}
 
-	
-	//TODO
-	//add a node, call backupALL(key, bull) on the next node to delete
-	//String nextServer = metaData.get(ip + ":" + port);
-	private void moveDataTo() throws IOException {
+	// add a node, call backupALL(key, bull) on the next node to delete
+	// String nextServer = metaData.get(ip + ":" + port);
+	private void moveDataTo(String previousServer) throws IOException {
 		// Set to SERVER_WRITE_LOCK
-		DataSingleton.getInstance().setStatus(
-				StatusType.SERVER_WRITE_LOCK);
+		//DataSingleton.getInstance().setStatus(StatusType.SERVER_WRITE_LOCK);
 		// Get meta data
-		MetaData metaData = DataSingleton.getInstance()
-				.getMetaData();
+		MetaData metaData = DataSingleton.getInstance().getMetaData();
 		// Get all data
 		// Traverse data
 		Map data = DataSingleton.getInstance().getMap();
-		Iterator<Map.Entry<String, String>> it = data
-				.entrySet().iterator();
+		Iterator<Map.Entry<String, String>> it = data.entrySet().iterator();
 		while (it.hasNext()) {
 			// Get each entry of data
 			Map.Entry<String, String> entry = it.next();
@@ -193,37 +186,36 @@ public class Listen implements Runnable {
 			String split[] = shouldBeServer.split(":");
 			String targetIP = split[0];
 			String targetPort = split[1];
+			logger.info("shouldBeServer"+shouldBeServer);
+			logger.info("previousServer"+previousServer);
 			// If not this server then send it to target
-			if (!targetPort.equals(socket.getLocalPort()
-					+ "")) {
-				CommunicationLogic communicateMove = new CommunicationLogic(
-						targetIP,
-						Integer.parseInt(targetPort));
-				// Connect
-				communicateMove.connect();
-				// Receive
-				String rec_msg = communicateMove.receive();
-				System.out.println(rec_msg);
-				logger.info(rec_msg);
-				// Send
-				communicateMove.send("PUT " + key + " "
-						+ value);
-				// Receive
-				rec_msg = communicateMove.receive();
-				System.out.println(rec_msg);
-				// Disconnect
-				communicateMove.disconnect();
-				
-				//remove the unnecessary backup data on the next two nodes
+			if (!targetPort.equals(socket.getLocalPort() + "")){
+				if(shouldBeServer.equals(previousServer)) {
+					CommunicationLogic communicateMove = new CommunicationLogic(
+							targetIP, Integer.parseInt(targetPort));
+					// Connect
+					communicateMove.connect();
+					// Receive
+					String rec_msg = communicateMove.receive();
+					System.out.println(rec_msg);
+					logger.info(rec_msg);
+					// Send
+					communicateMove.send("PUT " + key + " " + value);
+					// Receive
+					rec_msg = communicateMove.receive();
+					System.out.println(rec_msg);
+					// Disconnect
+					communicateMove.disconnect();
+				}
+				// remove the unnecessary backup data on the next two nodes
 				backUp(key, "null");
-				
+				DataSingleton.getInstance().getMap().remove(key);
 				// Delete local data
 				it.remove();
 			}
 		}
 		// Set to undo write lock
-		DataSingleton.getInstance().setStatus(
-				StatusType.SERVER_WRITE_LOCK);
+		//DataSingleton.getInstance().setStatus(StatusType.SERVER_WRITE_LOCK);
 		send("ack");
 	}
 
@@ -232,12 +224,10 @@ public class Listen implements Runnable {
 		logger.info("[UPDATE META-DATA] " + split[1]);
 		// Construct meta data and save it into data
 		// singleton
-		DataSingleton.getInstance().setMetaData(
-				new MetaData(split[1]));
+		DataSingleton.getInstance().setMetaData(new MetaData(split[1]));
 		// Send back ack
 		send("ack");
 	}
-
 
 	private void shutDown() throws IOException {
 		send("ack");
@@ -245,14 +235,12 @@ public class Listen implements Runnable {
 	}
 
 	private void stop() throws IOException {
-		DataSingleton.getInstance().setStatus(
-				StatusType.SERVER_STOPPED);
+		DataSingleton.getInstance().setStatus(StatusType.SERVER_STOPPED);
 		send("ack");
 	}
 
 	private void start() throws IOException {
-		DataSingleton.getInstance().setStatus(
-				StatusType.SERVER_ACTIVE);
+		DataSingleton.getInstance().setStatus(StatusType.SERVER_ACTIVE);
 		send("ack");
 	}
 
@@ -261,114 +249,96 @@ public class Listen implements Runnable {
 		logger.info("[META-DATA] " + split[1]);
 		// Construct meta data and save it into data
 		// singleton
-		DataSingleton.getInstance().setMetaData(
-				new MetaData(split[1]));
+		DataSingleton.getInstance().setMetaData(new MetaData(split[1]));
 		stop();
 	}
-
+	
+	// to change
 	private void get(String[] ss) throws IOException {
 		// Check status
-		StatusType status = DataSingleton.getInstance()
-				.getStatus();
+		StatusType status = DataSingleton.getInstance().getStatus();
 		if (status.equals(StatusType.valueOf("SERVER_STOPPED"))) {
 			send("SERVER_STOPPED");
 		} else {
-			MetaData metaData = DataSingleton.getInstance()
-					.getMetaData();
+			MetaData metaData = DataSingleton.getInstance().getMetaData();
 			String serverAdd = metaData.get(ss[1]);
 			String split[] = serverAdd.split(":");
 			String IP = split[0];
 			String Port = split[1];
-			String ip = socket.getLocalAddress().toString()
-					.replace("/", "");
+			String ip = socket.getLocalAddress().toString().replace("/", "");
 			// If this is the right server
-			if (IP.equals(ip)
-					&& Port.equals(socket.getLocalPort() + "")) {
-				if (DataSingleton.getInstance().containsKey(
-						ss[1]) == false) {
+			if (IP.equals(ip) && Port.equals(socket.getLocalPort() + "")) {
+				if (DataSingleton.getInstance().containsKey(ss[1]) == false) {
 					String send_message = "GET_ERROR " + ss[1];
 					send(send_message);
 				} else {
-					String send_message = "GET_SUCCESS "
-							+ ss[1]
-							+ " "
-							+ DataSingleton.getInstance().get(
-									ss[1]);
+					String send_message = "GET_SUCCESS " + ss[1] + " "
+							+ DataSingleton.getInstance().get(ss[1]);
 					send(send_message);
 				}
 			}
 			// If this is not the right server, response with
 			// NOT RESPONSIBLE and send back the newest meta
 			else {
-				send("SERVER_NOT_RESPONSIBLE "
-						+ metaData.toString());
+				send("SERVER_NOT_RESPONSIBLE " + metaData.toString());
 			}
 		}
 	}
 
 	private void put(String[] ss) throws IOException {
 		// Check status
-		StatusType status = DataSingleton.getInstance()
-				.getStatus();
+		StatusType status = DataSingleton.getInstance().getStatus();
 		if (status.equals(StatusType.valueOf("SERVER_STOPPED"))) {
 			send("SERVER_STOPPED");
-		} else if (status.equals(StatusType
-				.valueOf("SERVER_WRITE_LOCK"))) {
+		} else if (status.equals(StatusType.valueOf("SERVER_WRITE_LOCK"))) {
 			send("SERVER_WRITE_LOCK");
 		} else {
-			MetaData metaData = DataSingleton.getInstance()
-					.getMetaData();
+			MetaData metaData = DataSingleton.getInstance().getMetaData();
 			String serverAdd = metaData.get(ss[1]);
 			String split[] = serverAdd.split(":");
 			String IP = split[0];
 			String Port = split[1];
-			String ip = socket.getLocalAddress().toString()
-					.replace("/", "");
+			String ip = socket.getLocalAddress().toString().replace("/", "");
 			// If this is the right server
-			if (IP.equals(ip)
-					&& Port.equals(socket.getLocalPort() + "")) {
-				if (DataSingleton.getInstance().containsKey(
-						ss[1]) == false) {
+			if (IP.equals(ip) && Port.equals(socket.getLocalPort() + "")) {
+				if (DataSingleton.getInstance().containsKey(ss[1]) == false) {
 					if (ss[2].equals("null")) {
-						String send_message = "DELETE_ERROR "
-								+ ss[1];
+						String send_message = "DELETE_ERROR " + ss[1];
 						send(send_message);
 					} else {
-						DataSingleton.getInstance().put(ss[1],
-								ss[2]);
-						String send_message = "PUT_SUCCESS "
-								+ ss[1] + " " + ss[2];
+						DataSingleton.getInstance().put(ss[1], ss[2]);
+						String send_message = "PUT_SUCCESS " + ss[1] + " "
+								+ ss[2];
 						send(send_message);
+
+						logger.info("begin backup");
+						backUp(ss[1], ss[2]);
 					}
 				} else {
 					if (ss[2].equals("null")) {
-						String send_message = "DELETE_SUCCESS "
-								+ ss[1]
-								+ " "
-								+ DataSingleton.getInstance()
-										.get(ss[1]);
-						DataSingleton.getInstance().remove(
-								ss[1]);
+						String send_message = "DELETE_SUCCESS " + ss[1] + " "
+								+ DataSingleton.getInstance().get(ss[1]);
+						DataSingleton.getInstance().remove(ss[1]);
 						send(send_message);
 					} else {
-						DataSingleton.getInstance().put(ss[1],
-								ss[2]);
-						String send_message = "PUT_UPDATE "
-								+ ss[1] + " " + ss[2];
+						DataSingleton.getInstance().put(ss[1], ss[2]);
+						String send_message = "PUT_UPDATE " + ss[1] + " "
+								+ ss[2];
 						send(send_message);
+
+						logger.info("begin backup update");
+						backUp(ss[1], ss[2]);
 					}
 				}
 			}
 			// If this is not the right server, response with
 			// NOT RESPONSIBLE and send back the newest meta
 			else {
-				send("SERVER_NOT_RESPONSIBLE "
-						+ metaData.toString());
+				send("SERVER_NOT_RESPONSIBLE " + metaData.toString());
 			}
 
 		}
 	}
-
 
 	private String receive() throws IOException {
 		int length;
@@ -395,127 +365,171 @@ public class Listen implements Runnable {
 		logger.info("SEND '" + send_message + "' TO ["
 				+ socket.getRemoteSocketAddress() + "]");
 	}
-	
-	
+
 	/**
-	 * For coordinator node
-	 * Send backup command to two replica node instances with the coordinator node data
+	 * For coordinator node Send backup command to two replica node instances
+	 * with the coordinator node data
 	 */
-	public void backUp(String key, String value){
-		MetaData metaData = DataSingleton.getInstance()
-				.getMetaData();
-		ArrayList<String> replicaList = new ArrayList<String>();
-		
-		//get the next two servers
-		String ip = socket.getLocalAddress().toString().replace("/", "");;
-		int port = socket.getLocalPort();
-		logger.info("my ip port "+ip+" "+port);
-		
-		String nextServer1 = metaData.getNext(ip + ":" + port);
-		String split1[] = nextServer1.split(":");
-		String nextServerIP = split1[0];
-		String nextServerPort = split1[1];
-		logger.info("server1 "+nextServer1);
+	public void backUp(String key, String value) {
+		try {
+			MetaData metaData = DataSingleton.getInstance().getMetaData();
+			ArrayList<String> replicaList = new ArrayList<String>();
 
+			// get the next two servers
+			String ip = socket.getLocalAddress().toString().replace("/", "");
+			;
+			int port = socket.getLocalPort();
+			logger.info("my ip port " + ip + " " + port);
 
-		replicaList.add(nextServer1);
-
-		String nextServer2 = metaData.getNext(nextServerIP + ":" + nextServerPort);
-		replicaList.add(nextServer2);
-		logger.info("server2 "+nextServer2);
-		// "Put" data to the two replica servers
-		for (String replica : replicaList) {
-			String split[] = replica.split(":");
-			
-			// Connect to server
-			CommunicationLogic communication = new CommunicationLogic(split[0],
-					Integer.parseInt(split[1]));
-			try {
-				communication.connect();
-				String rec_msg = communication.receive();
-				logger.info("receive message from replica server"+rec_msg);
-			
-				//backup data to server
-				logger.info("SERVER "+"backup " + key + " " + value);
-				communication.send("SERVER "+"backup " + key + " " + value);
-				// Receive
-				rec_msg = communication.receive();
-				logger.info("receive message from replica server"+rec_msg);
-				
-				// Receive ack
-				if (rec_msg.split(" ")[0].equals("BACKUP_SUCCESS")) {
-					logger.info("backup data "+ rec_msg.split(" ")[1]+":"+rec_msg.split(" ")[2]+" successfully");
-				} else if (rec_msg.split(" ")[0].equals("BACKUP_UPDATE")) {
-					logger.info("update data "+ rec_msg.split(" ")[1]+":"+rec_msg.split(" ")[2]+" successfully");
-				}
-				communication.disconnect();
-			} catch (IOException e) {
-				System.out.println("ERROR! Cannot connect to server");
-				logger.error("ERROR! Cannot connect to server");
-			} catch (Exception e) {
-				System.out.println("ERROR!");
-				logger.error("ERROR!");
+			StringBuilder sb = new StringBuilder();
+			logger.info("there are " + metaData.getCircle().entrySet().size()
+					+ " nodes");
+			for (Entry<String, String> entry : metaData.getCircle().entrySet()) {
+				sb.append("Key: " + entry.getKey() + ". Value: "
+						+ entry.getValue() + " | ");
 			}
-			
+			logger.info(sb.toString());
+			String nextServer1 = metaData.getNext(ip + ":" + port);
+			String split1[] = nextServer1.split(":");
+			String nextServerIP = split1[0];
+			String nextServerPort = split1[1];
+			logger.info("server1 " + nextServer1);
+
+			replicaList.add(nextServer1);
+
+			String nextServer2 = metaData.getNext(nextServerIP + ":"
+					+ nextServerPort);
+			replicaList.add(nextServer2);
+			logger.info("server2 " + nextServer2);
+			// "Put" data to the two replica servers
+			for (String replica : replicaList) {
+				String split[] = replica.split(":");
+
+				// Connect to server
+				CommunicationLogic communication = new CommunicationLogic(
+						split[0], Integer.parseInt(split[1]));
+				try {
+					communication.connect();
+					String rec_msg = communication.receive();
+					logger.info("receive message from replica server" + rec_msg);
+
+					// backup data to server
+					logger.info("SERVER " + "backup " + key + " " + value);
+					communication.send("SERVER " + "backup " + key + " "
+							+ value);
+					// Receive
+					rec_msg = communication.receive();
+					logger.info("receive message from replica server" + rec_msg);
+
+					// Receive ack
+					if (rec_msg.split(" ")[0].equals("BACKUP_SUCCESS")) {
+						logger.info("backup data " + rec_msg.split(" ")[1]
+								+ ":" + rec_msg.split(" ")[2] + " successfully");
+					} else if (rec_msg.split(" ")[0].equals("BACKUP_UPDATE")) {
+						logger.info("update data " + rec_msg.split(" ")[1]
+								+ ":" + rec_msg.split(" ")[2] + " successfully");
+					}
+					communication.disconnect();
+				} catch (IOException e) {
+					System.out.println("ERROR! Cannot connect to server");
+					logger.error("ERROR! Cannot connect to server");
+				} catch (Exception e) {
+					System.out.println("ERROR!");
+					logger.error("ERROR!");
+				}
+
+			}
+		} catch (Exception e) {
+			StringWriter errors = new StringWriter();
+			e.printStackTrace(new PrintWriter(errors));
+			logger.error(errors.toString());
 		}
 	}
 
 	/**
-	 * For coordinator node
-	 * backup all data
+	 * For coordinator node backup all data
 	 * 
 	 */
-	private void backupALL(){
-		for (Entry<String, String> entry : DataSingleton.getInstance().getMap().entrySet()) {
-			backUp(entry.getKey(), entry.getValue());
+	private void backupALL() {
+		for (Entry<String, String> entry : DataSingleton.getInstance().getMap()
+				.entrySet()) {
+			MetaData metaData = DataSingleton.getInstance().getMetaData();
+			String serverAdd = metaData.get(entry.getKey());
+			logger.info("keys for backup" + entry.getKey());
+			String split[] = serverAdd.split(":");
+			String IP = split[0];
+			String Port = split[1];
+			String ip = socket.getLocalAddress().toString().replace("/", "");
+			// If this is the right server
+			if (IP.equals(ip) && Port.equals(socket.getLocalPort() + "")) {
+				backUp(entry.getKey(), entry.getValue());
+			}
+		}
+
+		try {
+			send("ack");
+		} catch (IOException e) {
+			StringWriter sw = new StringWriter();
+			e.printStackTrace(new PrintWriter(sw));
+			logger.error(sw.toString());
 		}
 	}
 
-	
-	
 	/**
-	 * for replica node
-	 * replicas execute the backup(PUT Operation) and ack
+	 * for replica node replicas execute the backup(PUT Operation) and ack
 	 * 
-	 * @param message from the coordinator server
+	 * @param message
+	 *            from the coordinator server
 	 * @throws IOException
 	 * 
-	 * send message back to the coordinator
+	 *             send message back to the coordinator
 	 */
 	private void doBackUp(String key, String value) throws IOException {
 		// Check status
-		StatusType status = DataSingleton.getInstance()
-				.getStatus();
+		StatusType status = DataSingleton.getInstance().getStatus();
 		if (status.equals(StatusType.valueOf("SERVER_STOPPED"))) {
 			send("SERVER_STOPPED");
 			logger.error("backup failed");
-		} else if (status.equals(StatusType
-				.valueOf("SERVER_WRITE_LOCK"))) {
+		} else if (status.equals(StatusType.valueOf("SERVER_WRITE_LOCK"))) {
 			send("SERVER_WRITE_LOCK");
 			logger.error("backup failed");
 		} else {
 			// If the replica server doesn't hold the key
 			if (!DataSingleton.getInstance().containsKey(key)) {
-					DataSingleton.getInstance().put(key, value);
-					String send_message = "BACKUP_SUCCESS " + key + " " + value;
-					send(send_message);
-					
-					//check data is backup or not
-					for (Entry<String, String> entry : DataSingleton.getInstance().getMap().entrySet()) {
-					    logger.info("Data: "+entry.getKey()+":"+entry.getValue());
-					}
+				if (value.equals("null")){
+					return;
+				}
+				DataSingleton.getInstance().put(key, value);
+				String send_message = "BACKUP_SUCCESS " + key + " " + value;
+				send(send_message);
+
+				// check data is backup or not
+				for (Entry<String, String> entry : DataSingleton.getInstance()
+						.getMap().entrySet()) {
+					logger.info("Data: " + entry.getKey() + ":"
+							+ entry.getValue());
+				}
 
 			} else {
+				String send_message;
+				if (value.equals("null")) {
+					DataSingleton.getInstance().remove(key);
+					send_message = "BACKUP_DELETE " + key + " " + value;
+				} else {
 					DataSingleton.getInstance().put(key, value);
-					String send_message = "BACKUP_UPDATE " + key + " " + value;
-					send(send_message);
-					//check data is backup or not
-					for (Entry<String, String> entry : DataSingleton.getInstance().getMap().entrySet()) {
-					    logger.info("Data: "+entry.getKey()+":"+entry.getValue());
-					}
+					send_message = "BACKUP_UPDATE " + key + " " + value;
+				}
+				
+				send(send_message);
+				// check data is backup or not
+				for (Entry<String, String> entry : DataSingleton.getInstance()
+						.getMap().entrySet()) {
+					logger.info("Data: " + entry.getKey() + ":"
+							+ entry.getValue());
+				}
+
 			}
 		}
 	}
-	
 
 }

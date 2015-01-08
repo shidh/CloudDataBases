@@ -1,10 +1,15 @@
 package app_kvServer;
 
+import java.util.Map.Entry;
+
+import org.apache.log4j.Logger;
+
 import client.CommunicationLogic;
 
 public class Heartbeat extends Thread{
 	
 	private int port;
+	Logger logger = Logger.getRootLogger();
 	
 	Heartbeat(int port){
 		this.port = port;
@@ -15,7 +20,7 @@ public class Heartbeat extends Thread{
 		try{
             while(true){
                 send();
-                Thread.sleep(2000);
+                Thread.sleep(10000);
             }
             
         }catch(Exception e){
@@ -29,6 +34,12 @@ public class Heartbeat extends Thread{
 					"localhost", 60000);
 			communicate.connect();
 			communicate.send(port + " still alive");
+			// check data is backup or not
+			for (Entry<String, String> entry : DataSingleton.getInstance()
+					.getMap().entrySet()) {
+				logger.info("Data: " + entry.getKey() + ":"
+						+ entry.getValue());
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

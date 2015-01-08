@@ -244,6 +244,7 @@ public class ECS{
 //			command += "ssh localhost java -jar ";
 			// for local
 			command += "java -jar ";
+			
 			command += JAR_DIR + " ";
 			command += info.getPort() + "  ALL\n";
 
@@ -483,6 +484,36 @@ public class ECS{
 			logger.error("ERROR! Cannot connect to server, operation aborted");
 			return;
 		}
+		
+		
+		// Communicate with new node
+		CommunicationLogic communicateStart = new CommunicationLogic(
+				temp.get(randomIndex).getAdd(), Integer.parseInt(temp.get(randomIndex).getPort()));
+		try {
+			communicateStart.connect();
+			String rec_msg = communicateStart.receive();
+			System.out.println(rec_msg);
+			communicateStart.send("ECS start");
+			String ackMsg = communicateStart.receive();
+			if (ackMsg.equals("ack")) {
+				System.out.println("ECS>> server " + temp.get(randomIndex).getAdd() + ":"
+						 + temp.get(randomIndex).getPort() + " backup successfully!");
+				logger.info("ECS>> server " + temp.get(randomIndex).getAdd() + ":"
+						 + temp.get(randomIndex).getPort() + " backup successfully!");
+			} else {
+				System.out.println("ECS>> server " + temp.get(randomIndex).getAdd() + ":"
+						 + temp.get(randomIndex).getPort() + " backup failed!");
+				logger.error("ECS>> server " + temp.get(randomIndex).getAdd() + ":"
+						 + temp.get(randomIndex).getPort() + " backup failed!");
+			} 
+			communicateStart.disconnect();
+		} catch (IOException e) {
+			System.out
+					.println("ERROR! Cannot connect to server, operation aborted");
+			logger.error("ERROR! Cannot connect to server, operation aborted");
+			return;
+		}
+		
 		// Update meta data to all server
 		for (ServerInfo info : result) {
 			// Communicate server
@@ -545,8 +576,11 @@ public class ECS{
 			return;
 		}
 		
+		
+		String newNodeAddress = temp.get(randomIndex).getAdd() + ":"+ temp.get(randomIndex).getPort();
 		// inform relevant nodes to backup
-		backupRelevantNodes(temp.get(randomIndex).getPort());
+		backupRelevantNodes(newNodeAddress);
+		
 	}
 
 	/**
@@ -625,20 +659,20 @@ public class ECS{
 		// Remove server from unavailable server list(result)
 		result.remove(randomPosition);
 		// inform relevant nodes to backup
-		backupRelevantNodes(randomServerPort);
+		backupRelevantNodes(randomServerIP + ":" + randomServerPort);
 	}
 
 	/**
 	 * Remove a node at a specified position.
 	 */
-	static public void removeTargetNode(String port) {
+	static public ServerInfo removeTargetNode(String port) {
 		String targetServerIP = null;
 		String targetServerPort = null;
 		ArrayList<ServerInfo> delServerList = new ArrayList<ServerInfo>();
 		if (result.size() == 0) {
 			logger.error("No available servers!");
 //			System.out.println("No available servers!");
-			return;
+			return null;
 		}
 		for (ServerInfo info : result) {
 			if (info.getPort().equals(port)){
@@ -679,31 +713,27 @@ public class ECS{
 				System.out
 						.println("ERROR! Cannot connect to server, operation aborted");
 				logger.error("ERROR! Cannot connect to server, operation aborted");
-				return;
+				return null;
 			}
 		}
+		return delServerList.get(0);
 	}
 	
 	/**
 	 * Backup relevant nodes of crashed node, namely one node next and two nodes before the
 	 * crashed node.
 	 */
-	static public void backupRelevantNodes(String port) {
-		String crashedServerIP = null;
-		String crashedServerPort = null;
-		if (result.size() == 0) {
-			System.out.println("No available servers!");
-			return;
-		}
-		for (ServerInfo info : result) {
-			if (info.getPort().equals(port)){
-				crashedServerIP = info.getAdd();
-				crashedServerPort = port;
-			}
-		}
+	static public void backupRelevantNodes(String address) {
 		// there are three relevant servers to be backed up
-		String crashedAddress = crashedServerIP + ":" + crashedServerPort;
-		String address1 = metaData.get(crashedAddress);
+		String crashedAddress = address;
+		String address1;
+		if(metaData.get(crashedAddress).equals(crashedAddress)){
+			// after added node
+			address1 = metaData.getNext(crashedAddress);
+		} else {
+			// after node crashed
+			address1 = metaData.get(crashedAddress);
+		}
 		String address2 = metaData.getPrevious(crashedAddress);
 		String address3 = metaData.getPrevious(address2);
 		logger.info("Notify server to backup: " + address1);
