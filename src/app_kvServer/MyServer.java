@@ -22,6 +22,7 @@ public class MyServer extends Thread {
 			serverSocket = new ServerSocket(PORT);
 			System.out.println("Start listening to port "+PORT+"...");
 			logger.info("Start listening to port "+PORT+"...");
+			DataSingleton.getInstance().port=PORT;
 		} catch (IOException e1) {
 			System.out.println("fail to bind port "+PORT+"...");
 			e1.printStackTrace();
