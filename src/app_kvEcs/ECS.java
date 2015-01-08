@@ -241,9 +241,9 @@ public class ECS{
 		for (ServerInfo info : result) {
 			String command = "";
 			// for ssh
-//			command += "ssh localhost java -jar ";
+			command += "ssh localhost java -jar ";
 			// for local
-			command += "java -jar ";
+//			command += "java -jar ";
 			
 			command += JAR_DIR + " ";
 			command += info.getPort() + "  ALL\n";
@@ -262,7 +262,7 @@ public class ECS{
 		}
 		// Wait for latency
 		try {
-			Thread.sleep(2000);
+			Thread.sleep(3000);
 		} catch (InterruptedException e1) {
 			e1.printStackTrace();
 		}
@@ -429,10 +429,14 @@ public class ECS{
 			return;
 		}
 		int randomIndex = random.nextInt(seed);
+		
 		// Start a server
-		// TODO should use SSH
 		String command = "";
-		command += "java -jar ";
+		// for ssh
+		command += "ssh localhost java -jar ";
+		// for local
+//		command += "java -jar ";
+		
 		command += JAR_DIR + " ";
 		command += temp.get(randomIndex).getPort() + "  ALL\n";
 		// Run script to open server program in the remote computer
@@ -543,11 +547,11 @@ public class ECS{
 				return;
 			}
 		}
-		// Add new node to unavailable list(result)
+		// Add new node to available list(result)
 		ServerInfo randomServer = temp.get(randomIndex);
 		result.add(new ServerInfo(randomServer.getName(),
 				randomServer.getAdd(), randomServer.getPort()));
-		// Move data from next server
+		// Move data from next server to newly added server
 		String splitNextServer[] = nextServer.split(":");
 		// Communicate next server
 		CommunicationLogic communicateNext = new CommunicationLogic(
@@ -564,8 +568,13 @@ public class ECS{
 				System.out.println("ECS>> Data already moved to server "
 						+ splitNextServer[0] + ":" + splitNextServer[1]
 						+ " successfully");
+				logger.info("ECS>> Data already moved to server "
+						+ splitNextServer[0] + ":" + splitNextServer[1]
+						+ " successfully");
 			} else {
 				System.out.println("ERROR! Failed to send meta data to server "
+						+ splitNextServer[0] + ":" + splitNextServer[1]);
+				logger.info("ERROR! Failed to send meta data to server "
 						+ splitNextServer[0] + ":" + splitNextServer[1]);
 			}
 			communicateNext.disconnect();
@@ -683,6 +692,7 @@ public class ECS{
 				logger.info("The following server is crashed: " + info);
 			}
 		}
+//		serverList.remove(delServerList.get(0));
 		result.removeAll(delServerList);
 		// Remove node from meta data
 		metaData.remove(targetServerIP + ":" + targetServerPort);
