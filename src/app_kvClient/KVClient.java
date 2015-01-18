@@ -3,16 +3,20 @@ package app_kvClient;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+
+import logger.LogSetup;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
+import client.CommunicationLogic;
+import client.KVStore;
 import common.messages.KVMessage;
 import common.messages.KVMessage.StatusType;
-import client.KVStore;
-import logger.LogSetup;
 
 public class KVClient {
 	static BufferedReader sysReader;
@@ -20,6 +24,7 @@ public class KVClient {
 	static int REMOTE_PORT;
 	static KVStore kvstore;
 	static KVMessage kvmessage = null;
+	static CommunicationLogic cl=null;// communication logic to register
 
 	static Logger logger = Logger.getRootLogger();
 
@@ -172,6 +177,16 @@ public class KVClient {
 		System.out.println("EchoClient> Application exit!");
 		logger.info("EchoClient> Application exit!");
 	}
+	
+	public static void register(String key, String type){
+		try {
+			cl.send("register "+key+" "+type);
+		} catch (IOException e) {
+			StringWriter errors = new StringWriter();
+			e.printStackTrace(new PrintWriter(errors));
+			logger.error(errors.toString());
+		}
+	}
 
 	/**
 	 * Entrance of the application
@@ -186,6 +201,11 @@ public class KVClient {
 
 		sysReader = new BufferedReader(new InputStreamReader(System.in));
 		String str = null;
+		
+		// connect to ecs register agent
+		cl=new CommunicationLogic("localhost", 60001);
+		cl.connect();
+		
 		while (true) {
 			System.out.print("EchoClient> ");
 			logger.info("EchoClient> ");
@@ -254,6 +274,14 @@ public class KVClient {
 								.println("EchoClient> You are not connected to a server!");
 						logger.error("EchoClient> You are not connected to a server!");
 					}
+				}
+				// register
+				else if (cmd.equals("register")) {
+					if(token.length!=3){
+						System.out.println("EchoClient> Wrong number of parameters");
+						continue;
+					}
+					register(token[1],token[2]);
 				}
 				// logLevel
 				else if (cmd.equals("logLevel")) {

@@ -102,8 +102,8 @@ public class ECS{
 			new Thread(serverHeartbeat).start();
 			
 			// register thread
-//			RegisterAgent ra=new RegisterAgent();
-//			new Thread(ra).start();
+			RegisterAgent ra=new RegisterAgent();
+			new Thread(ra).start();
 			
 			// Command line user interface
 			CommandLine();
