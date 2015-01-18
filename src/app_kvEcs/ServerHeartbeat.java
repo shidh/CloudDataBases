@@ -21,7 +21,7 @@ public class ServerHeartbeat extends Thread{
 		int PORT = 60000;
 		// Initiate server socket
 		try {
-			serverSocket = new ServerSocket(PORT);
+			serverSocket = new ServerSocket(PORT,-1);
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}

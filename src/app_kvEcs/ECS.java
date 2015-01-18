@@ -97,8 +97,14 @@ public class ECS{
 						serverPort);
 				serverList.add(serverInfo);
 			}
+			// heart beat thread
 			ServerHeartbeat serverHeartbeat = new ServerHeartbeat();
 			new Thread(serverHeartbeat).start();
+			
+			// register thread
+//			RegisterAgent ra=new RegisterAgent();
+//			new Thread(ra).start();
+			
 			// Command line user interface
 			CommandLine();
 		} catch (FileNotFoundException e) {
@@ -241,9 +247,9 @@ public class ECS{
 		for (ServerInfo info : result) {
 			String command = "";
 			// for ssh
-			command += "ssh localhost java -jar ";
+//			command += "ssh localhost java -jar ";
 			// for local
-//			command += "java -jar ";
+			command += "java -jar ";
 			
 			command += JAR_DIR + " ";
 			command += info.getPort() + "  ALL\n";
@@ -433,9 +439,9 @@ public class ECS{
 		// Start a server
 		String command = "";
 		// for ssh
-		command += "ssh localhost java -jar ";
+//		command += "ssh localhost java -jar ";
 		// for local
-//		command += "java -jar ";
+		command += "java -jar ";
 		
 		command += JAR_DIR + " ";
 		command += temp.get(randomIndex).getPort() + "  ALL\n";
