@@ -11,6 +11,8 @@ import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
 
+import app_kvEcs.RegisterableData;
+
 import common.messages.KVMessage.StatusType;
 import common.messages.MetaData;
 
@@ -22,6 +24,16 @@ public class DataSingleton {
 	
 	private StatusType status=StatusType.SERVER_STOPPED;
 	
+	private Map<String,RegisterableData> registerList=new HashMap<String,RegisterableData>();
+	
+	public Map<String, RegisterableData> getRegisterList() {
+		return registerList;
+	}
+
+	public void setRegisterList(Map<String, RegisterableData> registerList) {
+		this.registerList = registerList;
+	}
+
 	public int port;
 	
 	private Map<String, String> tmp=new HashMap<String, String>();

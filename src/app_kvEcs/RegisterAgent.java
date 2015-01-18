@@ -21,10 +21,12 @@ public class RegisterAgent extends Thread {
 			ss=new ServerSocket(PORT,-1);// -1 for unlimited clients
 			
 			while(true){
+				System.out.println("Agent starts to accepts");
 				Socket socket=ss.accept();
+				System.out.println("Agent got client!");
 				
 				RegisteredClient rc=new RegisteredClient(socket);
-				new Thread(rc).run();
+				new Thread(rc).start();
 			}
 			
 		} catch (Exception e) {

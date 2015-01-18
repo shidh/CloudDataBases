@@ -6,10 +6,13 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.Socket;
+import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
 
 import org.apache.log4j.Logger;
+
+import app_kvServer.DataSingleton;
 
 public class RegisteredClient extends Thread implements Observer {
 	Logger logger=Logger.getRootLogger();
@@ -44,17 +47,23 @@ public class RegisteredClient extends Thread implements Observer {
 			
 			if(split[0].equals("register")){
 				send("starting to listen for changes of "+split[1]);
+				
+				Map<String,RegisterableData> registerList=DataSingleton.getInstance().getRegisterList();
+				if(!registerList.containsKey(split[1])){
+					System.out.println("doesn't contains key, create one");
+					registerList.put(split[1], new RegisterableData());
+				}
+				registerList.get(split[1]).addObserver(this);// add observer
 			}else if(split[0].equals("deregister")){
 				send("stop listening for changes of "+split[1]);
 			}
 		}
 	}
 
-
-
 	@Override
 	public void update(Observable o, Object arg) {
-		
+		System.out.println("Observer being noticified. with msg "+arg);
+		send(arg.toString());
 	}
 	
 	/**

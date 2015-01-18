@@ -51,10 +51,22 @@ public class ServerHeartbeat extends Thread{
     				Gson gson=new Gson();
     				HashMap<String,String> map=gson.fromJson(dataJSON, HashMap.class);
     				for(Map.Entry<String,String> item:map.entrySet()){
-    					if(DataSingleton.getInstance().containsKey(item.getKey())){
-    						// update
+    					if(item.getValue().equals("null")){
+    						// delete notification
+    						System.out.println("fire delete event of "+item.getKey());
+    						if(DataSingleton.getInstance().getRegisterList().containsKey(item.getKey())){
+    							RegisterableData rd=DataSingleton.getInstance().getRegisterList().get(item.getKey());
+    							rd.setChanged();
+    							rd.notifyObservers("NOTIFICATION DELETE "+item.getKey());
+    						}
     					}else{
-    						// insert
+    						// update notification
+    						System.out.println("fire update event of "+item.getKey()+" the new value is "+item.getValue());
+    						if(DataSingleton.getInstance().getRegisterList().containsKey(item.getKey())){
+    							RegisterableData rd=DataSingleton.getInstance().getRegisterList().get(item.getKey());
+    							rd.setChanged();
+    							rd.notifyObservers("NOTIFICATION UPDATE "+item.getKey()+"="+item.getValue());
+    						}
     					}
     				}
     				// heart beat
