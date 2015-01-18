@@ -11,12 +11,12 @@ import org.apache.log4j.Logger;
 public class CommunicationLogic {
 	Logger logger=Logger.getRootLogger();
 	
-	static String ip = null;
-	static int port;
+	String ip = null;
+	int port;
 	
-	public static Socket socket = null;
-	static InputStream socketInputStream = null;
-	static OutputStream socketOutputStream = null;
+	public Socket socket = null;
+	InputStream socketInputStream = null;
+	OutputStream socketOutputStream = null;
 
 	public CommunicationLogic(String IP, int PORT) {
 		ip = IP;
