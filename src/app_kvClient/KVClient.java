@@ -15,6 +15,7 @@ import org.apache.log4j.Logger;
 
 import client.CommunicationLogic;
 import client.KVStore;
+
 import common.messages.KVMessage;
 import common.messages.KVMessage.StatusType;
 
@@ -205,6 +206,10 @@ public class KVClient {
 		// connect to ecs register agent
 		cl=new CommunicationLogic("localhost", 60001);
 		cl.connect();
+		
+		// notification listener
+		NotificationListener nl=new NotificationListener(cl);
+		new Thread(nl).start();
 		
 		while (true) {
 			System.out.print("EchoClient> ");

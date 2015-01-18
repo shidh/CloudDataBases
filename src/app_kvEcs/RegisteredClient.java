@@ -43,9 +43,9 @@ public class RegisteredClient extends Thread implements Observer {
 			String split[]=rec_msg.split(" ");
 			
 			if(split[0].equals("register")){
-				
+				send("starting to listen for changes of "+split[1]);
 			}else if(split[0].equals("deregister")){
-				
+				send("stop listening for changes of "+split[1]);
 			}
 		}
 	}
@@ -54,8 +54,7 @@ public class RegisteredClient extends Thread implements Observer {
 
 	@Override
 	public void update(Observable o, Object arg) {
-		// TODO Auto-generated method stub
-
+		
 	}
 	
 	/**
@@ -64,7 +63,7 @@ public class RegisteredClient extends Thread implements Observer {
 	 * @param send_message
 	 * @throws IOException
 	 */
-	private void send(String send_message) throws IOException {
+	private void send(String send_message) {
 		try {
 			outputStream.write(send_message.getBytes());
 			outputStream.flush();

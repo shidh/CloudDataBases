@@ -2,12 +2,10 @@ package app_kvServer;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -26,7 +24,15 @@ public class DataSingleton {
 	
 	public int port;
 	
-	
+	public Map<String,String> getResponsibleData(){
+		Map<String,String> result=new HashMap<String, String>();
+		for(Entry<String,String> item:map.entrySet()){
+			if(metaData.get(item.getKey()).split(":")[1].equals(port+"")){
+				result.put(item.getKey(),item.getValue());
+			}
+		}
+		return result;
+	}
 	
 	public Map<String, String> getMap() {
 		return map;

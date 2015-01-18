@@ -14,7 +14,7 @@ public class CommunicationLogic {
 	static String ip = null;
 	static int port;
 	
-	static Socket socket = null;
+	public static Socket socket = null;
 	static InputStream socketInputStream = null;
 	static OutputStream socketOutputStream = null;
 

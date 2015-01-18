@@ -6,6 +6,8 @@ import org.apache.log4j.Logger;
 
 import client.CommunicationLogic;
 
+import com.google.gson.Gson;
+
 public class Heartbeat extends Thread{
 	
 	private int port;
@@ -33,7 +35,8 @@ public class Heartbeat extends Thread{
 			CommunicationLogic communicate = new CommunicationLogic(
 					"localhost", 60000);
 			communicate.connect();
-			communicate.send(port + " still alive");
+			Gson gson=new Gson();
+			communicate.send(port + " still alive "+gson.toJson(DataSingleton.getInstance().getResponsibleData()));
 			// check data is backup or not
 			for (Entry<String, String> entry : DataSingleton.getInstance()
 					.getMap().entrySet()) {
