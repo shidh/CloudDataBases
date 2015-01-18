@@ -24,13 +24,29 @@ public class DataSingleton {
 	
 	public int port;
 	
-	public Map<String,String> getResponsibleData(){
+	private Map<String, String> tmp=new HashMap<String, String>();
+	
+	/**
+	 * Compares the data to the last retrieved one
+	 * @return
+	 */
+	public Map<String,String> getDataDifference(){
 		Map<String,String> result=new HashMap<String, String>();
-		for(Entry<String,String> item:map.entrySet()){
+		
+		// put deleted data to be kay:null
+		for(Entry<String,String> item:tmp.entrySet()){
 			if(metaData.get(item.getKey()).split(":")[1].equals(port+"")){
-				result.put(item.getKey(),item.getValue());
+				if(!map.containsKey(item.getKey())){
+					// this key has been deleted
+					result.put(item.getKey(), "null");
+				}else if(!item.getValue().equals(map.get(item.getKey()))){
+					// this key has been updated
+					result.put(item.getKey(), map.get(item.getKey()));
+				}
 			}
 		}
+		
+		tmp=new HashMap<String,String>(map);// copy
 		return result;
 	}
 	

@@ -9,6 +9,10 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import app_kvServer.DataSingleton;
+
+import com.google.gson.Gson;
+
 public class ServerHeartbeat extends Thread{
 	private int BUF_SIZE = 1024;
 	private Socket socket = null;
@@ -42,6 +46,18 @@ public class ServerHeartbeat extends Thread{
     			}
     			try {
     				String rec_message = receive();
+    				// parse data
+    				String dataJSON=rec_message.split("alive ")[1];
+    				Gson gson=new Gson();
+    				HashMap<String,String> map=gson.fromJson(dataJSON, HashMap.class);
+    				for(Map.Entry<String,String> item:map.entrySet()){
+    					if(DataSingleton.getInstance().containsKey(item.getKey())){
+    						// update
+    					}else{
+    						// insert
+    					}
+    				}
+    				// heart beat
     				final String serverPort = rec_message.split(" ")[0];
     				if (serverMap.containsKey(serverPort)) {
     					serverMap.get(serverPort).cancel();

@@ -36,7 +36,7 @@ public class Heartbeat extends Thread{
 					"localhost", 60000);
 			communicate.connect();
 			Gson gson=new Gson();
-			communicate.send(port + " still alive "+gson.toJson(DataSingleton.getInstance().getResponsibleData()));
+			communicate.send(port + " still alive "+gson.toJson(DataSingleton.getInstance().getDataDifference()));
 			// check data is backup or not
 			for (Entry<String, String> entry : DataSingleton.getInstance()
 					.getMap().entrySet()) {
