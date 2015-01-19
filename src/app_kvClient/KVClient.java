@@ -179,9 +179,28 @@ public class KVClient {
 		logger.info("EchoClient> Application exit!");
 	}
 	
+	/**
+	 * Register notification
+	 * @param key
+	 * @param type update or delete or all
+	 */
 	public static void register(String key, String type){
 		try {
 			cl.send("register "+key+" "+type);
+		} catch (IOException e) {
+			StringWriter errors = new StringWriter();
+			e.printStackTrace(new PrintWriter(errors));
+			logger.error(errors.toString());
+		}
+	}
+	
+	/**
+	 * Deregister notification
+	 * @param key
+	 */
+	public static void deregister(String key){
+		try {
+			cl.send("deregister "+key);
 		} catch (IOException e) {
 			StringWriter errors = new StringWriter();
 			e.printStackTrace(new PrintWriter(errors));
@@ -287,6 +306,14 @@ public class KVClient {
 						continue;
 					}
 					register(token[1],token[2]);
+				}
+				// deregister
+				else if (cmd.equals("deregister")) {
+					if(token.length!=2){
+						System.out.println("EchoClient> Wrong number of parameters");
+						continue;
+					}
+					deregister(token[1]);
 				}
 				// logLevel
 				else if (cmd.equals("logLevel")) {

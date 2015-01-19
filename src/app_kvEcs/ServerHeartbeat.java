@@ -57,7 +57,7 @@ public class ServerHeartbeat extends Thread{
     						if(DataSingleton.getInstance().getRegisterList().containsKey(item.getKey())){
     							RegisterableData rd=DataSingleton.getInstance().getRegisterList().get(item.getKey());
     							rd.setChanged();
-    							rd.notifyObservers("NOTIFICATION DELETE "+item.getKey());
+    							rd.notifyObservers("NOTIFICATION delete "+item.getKey());
     						}
     					}else{
     						// update notification
@@ -65,7 +65,7 @@ public class ServerHeartbeat extends Thread{
     						if(DataSingleton.getInstance().getRegisterList().containsKey(item.getKey())){
     							RegisterableData rd=DataSingleton.getInstance().getRegisterList().get(item.getKey());
     							rd.setChanged();
-    							rd.notifyObservers("NOTIFICATION UPDATE "+item.getKey()+"="+item.getValue());
+    							rd.notifyObservers("NOTIFICATION update "+item.getKey()+"="+item.getValue());
     						}
     					}
     				}
