@@ -204,7 +204,7 @@ public class Listen implements Runnable {
 		}
 	}
 
-	// add a node, call backupALL(key, bull) on the next node to delete
+	// When adding a node, call backupALL(key, bull) on the next node to delete
 	// String nextServer = metaData.get(ip + ":" + port);
 	private void moveDataTo(String previousServer) throws IOException {
 		try {
@@ -482,6 +482,9 @@ public class Listen implements Runnable {
 	/**
 	 * For coordinator node Send backup command to two replica node instances
 	 * with the coordinator node data
+	 * 
+	 * @param key
+	 * @param value
 	 */
 	public void backUp(String key, String value) {
 		try {
@@ -595,14 +598,14 @@ public class Listen implements Runnable {
 		}
 	}
 
+	
 	/**
 	 * for replica node replicas execute the backup(PUT Operation) and ack
-	 * 
-	 * @param message
-	 *            from the coordinator server
+	 * @param key
+	 * @param value
 	 * @throws IOException
 	 * 
-	 *             send message back to the coordinator
+	 * send message back to the coordinator
 	 */
 	private void doBackUp(String key, String value) throws IOException {
 		try {

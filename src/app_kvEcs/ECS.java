@@ -247,9 +247,9 @@ public class ECS{
 		for (ServerInfo info : result) {
 			String command = "";
 			// for ssh
-			command += "ssh localhost java -jar ";
+			//command += "ssh localhost java -jar ";
 			// for local
-//			command += "java -jar ";
+			command += "java -jar ";
 			
 			command += JAR_DIR + " ";
 			command += info.getPort() + "  ALL\n";
@@ -738,6 +738,7 @@ public class ECS{
 	/**
 	 * Backup relevant nodes of crashed node, namely one node next and two nodes before the
 	 * crashed node.
+	 * @param address
 	 */
 	static public void backupRelevantNodes(String address) {
 		// there are three relevant servers to be backed up
